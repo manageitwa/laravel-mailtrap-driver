@@ -68,6 +68,7 @@ class MailtrapTransport extends Transport
      */
     protected function payload(Swift_Mime_SimpleMessage $message): array
     {
+        // Process addresses for mail
         $payload = [
             'headers' => [
                 'Api-Token' => $this->token,
@@ -86,6 +87,7 @@ class MailtrapTransport extends Transport
             $payload['json']['bcc'] = $this->processAddresses($message->getBcc());
         }
 
+        // Process body content and attachments
         if (count($message->getChildren())) {
             // We're dealing with a multipart message
             if ($message->getBodyContentType() === 'text/html') {
@@ -118,6 +120,12 @@ class MailtrapTransport extends Transport
             $payload['json']['html'] = $message->getBody();
         } elseif ($message->getBodyContentType() === 'text/plain') {
             $payload['json']['text'] = $message->getBody();
+        }
+
+        // Add category if it's available
+        if ($message->getHeaders()->has('X-Mailtrap-Category')) {
+            $payload['json']['category'] = $message->getHeaders()->get('X-Mailtrap-Category')->getFieldBody();
+            $message->getHeaders()->remove('X-Mailtrap-Category');
         }
 
         return $payload;
